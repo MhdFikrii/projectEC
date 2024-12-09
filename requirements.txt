@@ -1,0 +1,12 @@
+matplotlib
+seaborn
+
+matplotlib
+seaborn
+ollama
+torch
+numpy
+Pillow
+streamlit
+streamlit_drawable_canvas
+opencv-contrib-python-headless
