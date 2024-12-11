@@ -3,7 +3,7 @@ import random
 import streamlit as st
 import pandas as pd
 
-df = pd.DataFrame.from_dict(program_ratings_dict, orient='index', columns=all_time_slots[:len(next(iter(program_ratings_dict.values())))])
+df = pd.DataFrame.from_dict(program_ratings, orient='index', columns=all_time_slots[:len(next(iter(program_ratings.values())))])
 df.index.name = 'Program'
 df.reset_index(inplace=True)
 
