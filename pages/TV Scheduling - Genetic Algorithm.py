@@ -1,6 +1,11 @@
 import csv
 import random
 import streamlit as st
+import pandas as pd
+
+df = pd.DataFrame.from_dict(program_ratings_dict, orient='index', columns=all_time_slots[:len(next(iter(program_ratings_dict.values())))])
+df.index.name = 'Program'
+df.reset_index(inplace=True)
 
 # Function to read the CSV file and convert it to the desired format
 def read_csv_to_dict(file_path):
