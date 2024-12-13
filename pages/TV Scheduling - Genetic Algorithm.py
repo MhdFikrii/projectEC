@@ -31,20 +31,23 @@ st.title("TV Scheduling with Genetic Algorithm")
 
 st.sidebar.header("Genetic Algorithm Parameters")
 
-# Allow user to input Crossover Rate (CO_R) and Mutation Rate (MUT_R)
+# Allow user to input and adjust parameters dynamically
 CO_R = st.sidebar.slider("Crossover Rate (CO_R):", min_value=0.0, max_value=0.95, value=0.8, step=0.01, key="crossover_rate")
 MUT_R = st.sidebar.slider("Mutation Rate (MUT_R):", min_value=0.01, max_value=0.05, value=0.02, step=0.01, key="mutation_rate")
 
-# Display parameters
+GEN = st.sidebar.number_input("Number of Generations (GEN):", min_value=10, max_value=500, value=100, step=10, key="generations")
+POP = st.sidebar.number_input("Population Size (POP):", min_value=10, max_value=200, value=50, step=10, key="population_size")
+EL_S = st.sidebar.number_input("Elitism Size (EL_S):", min_value=1, max_value=10, value=2, step=1, key="elitism_size")
+
+# Display selected parameters
 st.sidebar.write(f"Selected Crossover Rate: {CO_R}")
 st.sidebar.write(f"Selected Mutation Rate: {MUT_R}")
+st.sidebar.write(f"Number of Generations: {GEN}")
+st.sidebar.write(f"Population Size: {POP}")
+st.sidebar.write(f"Elitism Size: {EL_S}")
 
 ##################################### DEFINING PARAMETERS AND DATASET ################################################################
 ratings = program_ratings_dict
-
-GEN = 100  # Number of generations
-POP = 50   # Population size
-EL_S = 2   # Elitism size
 
 all_programs = list(ratings.keys())  # All programs
 all_time_slots = list(range(6, 24))  # Time slots (6 AM to 11 PM)
@@ -69,7 +72,7 @@ def initialize_pop(programs, time_slots):
 
     return all_schedules
 
-# Finding the best schedule via brute force
+# Brute-force search for the initial best schedule
 def finding_best_schedule(all_schedules):
     best_schedule = []
     max_ratings = 0
@@ -81,14 +84,6 @@ def finding_best_schedule(all_schedules):
             best_schedule = schedule
 
     return best_schedule
-
-# Generating all possible schedules
-all_possible_schedules = initialize_pop(all_programs, all_time_slots)
-
-# Brute-force search for the initial best schedule
-best_schedule = finding_best_schedule(all_possible_schedules)
-
-############################################# GENETIC ALGORITHM #############################################################################
 
 # Crossover function
 def crossover(schedule1, schedule2):
@@ -105,7 +100,7 @@ def mutate(schedule):
     return schedule
 
 # Genetic algorithm
-def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=CO_R, mutation_rate=MUT_R, elitism_size=EL_S):
+def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size):
     population = [initial_schedule]
 
     # Initialize population
@@ -142,23 +137,27 @@ def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, cr
 
 ##################################################### RESULTS ###################################################################################
 
+# Generate all possible schedules (brute force)
+all_possible_schedules = initialize_pop(all_programs, all_time_slots)
+
 # Brute force schedule
 initial_best_schedule = finding_best_schedule(all_possible_schedules)
 
-# Remaining time slots
-rem_t_slots = len(all_time_slots) - len(initial_best_schedule)
-
 # Genetic algorithm schedule
-genetic_schedule = genetic_algorithm(initial_best_schedule, generations=GEN, population_size=POP, elitism_size=EL_S)
+genetic_schedule = genetic_algorithm(
+    initial_best_schedule,
+    generations=GEN,
+    population_size=POP,
+    crossover_rate=CO_R,
+    mutation_rate=MUT_R,
+    elitism_size=EL_S,
+)
 
-# Combine initial and genetic schedules
-final_schedule = initial_best_schedule + genetic_schedule[:rem_t_slots]
-
-# Create a DataFrame for the final schedule
+# Create the final schedule
 final_schedule_data = {
-    "Time Slot": [f"{all_time_slots[time_slot]:02d}:00" for time_slot in range(len(final_schedule))],
-    "Program": final_schedule,
-    "Rating": [ratings[program][time_slot] for time_slot, program in enumerate(final_schedule)],
+    "Time Slot": [f"{all_time_slots[time_slot]:02d}:00" for time_slot in range(len(genetic_schedule))],
+    "Program": genetic_schedule,
+    "Rating": [ratings[program][time_slot] for time_slot, program in enumerate(genetic_schedule)],
 }
 
 df = pd.DataFrame(final_schedule_data)
@@ -168,4 +167,4 @@ st.write("### Final Optimal Schedule:")
 st.table(df)
 
 # Display the total ratings
-st.write("### Total Ratings:", fitness_function(final_schedule))
+st.write("### Total Ratings:", fitness_function(genetic_schedule))
