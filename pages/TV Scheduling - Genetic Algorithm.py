@@ -35,19 +35,17 @@ st.sidebar.header("Genetic Algorithm Parameters")
 CO_R = st.sidebar.slider("Crossover Rate (CO_R):", min_value=0.0, max_value=0.95, value=0.8, step=0.01, key="crossover_rate")
 MUT_R = st.sidebar.slider("Mutation Rate (MUT_R):", min_value=0.01, max_value=0.05, value=0.02, step=0.01, key="mutation_rate")
 
-GEN = st.sidebar.number_input("Number of Generations (GEN):", min_value=10, max_value=500, value=100, step=10, key="generations")
-POP = st.sidebar.number_input("Population Size (POP):", min_value=10, max_value=200, value=50, step=10, key="population_size")
-EL_S = st.sidebar.number_input("Elitism Size (EL_S):", min_value=1, max_value=10, value=2, step=1, key="elitism_size")
-
 # Display selected parameters
 st.sidebar.write(f"Selected Crossover Rate: {CO_R}")
 st.sidebar.write(f"Selected Mutation Rate: {MUT_R}")
-st.sidebar.write(f"Number of Generations: {GEN}")
-st.sidebar.write(f"Population Size: {POP}")
-st.sidebar.write(f"Elitism Size: {EL_S}")
 
 ##################################### DEFINING PARAMETERS AND DATASET ################################################################
 ratings = program_ratings_dict
+
+# Fixed default values for parameters
+GEN = 100  # Number of generations
+POP = 50   # Population size
+EL_S = 2   # Elitism size
 
 all_programs = list(ratings.keys())  # All programs
 all_time_slots = list(range(6, 24))  # Time slots (6 AM to 11 PM)
@@ -100,11 +98,11 @@ def mutate(schedule):
     return schedule
 
 # Genetic algorithm
-def genetic_algorithm(initial_schedule, generations, population_size, crossover_rate, mutation_rate, elitism_size):
+def genetic_algorithm(initial_schedule, generations, crossover_rate, mutation_rate):
     population = [initial_schedule]
 
     # Initialize population
-    for _ in range(population_size - 1):
+    for _ in range(POP - 1):  # POP is fixed to 50
         random_schedule = initial_schedule.copy()
         random.shuffle(random_schedule)
         population.append(random_schedule)
@@ -115,9 +113,9 @@ def genetic_algorithm(initial_schedule, generations, population_size, crossover_
 
         # Elitism
         population.sort(key=lambda schedule: fitness_function(schedule), reverse=True)
-        new_population.extend(population[:elitism_size])
+        new_population.extend(population[:EL_S])  # EL_S is fixed to 2
 
-        while len(new_population) < population_size:
+        while len(new_population) < POP:
             parent1, parent2 = random.choices(population, k=2)
             if random.random() < crossover_rate:
                 child1, child2 = crossover(parent1, parent2)
@@ -146,11 +144,9 @@ initial_best_schedule = finding_best_schedule(all_possible_schedules)
 # Genetic algorithm schedule
 genetic_schedule = genetic_algorithm(
     initial_best_schedule,
-    generations=GEN,
-    population_size=POP,
+    generations=GEN,  # Fixed number of generations
     crossover_rate=CO_R,
     mutation_rate=MUT_R,
-    elitism_size=EL_S,
 )
 
 # Create the final schedule
