@@ -31,20 +31,18 @@ st.title("TV Scheduling with Genetic Algorithm")
 
 st.sidebar.header("Genetic Algorithm Parameters")
 
-# Allow user to input and adjust parameters dynamically
+# Allow user to input Crossover Rate (CO_R) and Mutation Rate (MUT_R)
 CO_R = st.sidebar.slider("Crossover Rate (CO_R):", min_value=0.0, max_value=0.95, value=0.8, step=0.01, key="crossover_rate")
 MUT_R = st.sidebar.slider("Mutation Rate (MUT_R):", min_value=0.01, max_value=0.05, value=0.02, step=0.01, key="mutation_rate")
-GEN = st.sidebar.number_input("Number of Generations (GEN):", min_value=10, max_value=500, value=100, step=10, key="generations")
 
-# Display selected parameters
+# Display parameters
 st.sidebar.write(f"Selected Crossover Rate: {CO_R}")
 st.sidebar.write(f"Selected Mutation Rate: {MUT_R}")
-st.sidebar.write(f"Number of Generations: {GEN}")
 
 ##################################### DEFINING PARAMETERS AND DATASET ################################################################
 ratings = program_ratings_dict
 
-# Fixed default values for removed parameters
+GEN = 100  # Number of generations
 POP = 50   # Population size
 EL_S = 2   # Elitism size
 
@@ -71,7 +69,7 @@ def initialize_pop(programs, time_slots):
 
     return all_schedules
 
-# Brute-force search for the initial best schedule
+# Finding the best schedule via brute force
 def finding_best_schedule(all_schedules):
     best_schedule = []
     max_ratings = 0
@@ -83,6 +81,14 @@ def finding_best_schedule(all_schedules):
             best_schedule = schedule
 
     return best_schedule
+
+# Generating all possible schedules
+all_possible_schedules = initialize_pop(all_programs, all_time_slots)
+
+# Brute-force search for the initial best schedule
+best_schedule = finding_best_schedule(all_possible_schedules)
+
+############################################# GENETIC ALGORITHM #############################################################################
 
 # Crossover function
 def crossover(schedule1, schedule2):
@@ -99,11 +105,11 @@ def mutate(schedule):
     return schedule
 
 # Genetic algorithm
-def genetic_algorithm(initial_schedule, generations, crossover_rate, mutation_rate):
+def genetic_algorithm(initial_schedule, generations=GEN, population_size=POP, crossover_rate=CO_R, mutation_rate=MUT_R, elitism_size=EL_S):
     population = [initial_schedule]
 
     # Initialize population
-    for _ in range(POP - 1):  # POP is fixed to 50
+    for _ in range(population_size - 1):
         random_schedule = initial_schedule.copy()
         random.shuffle(random_schedule)
         population.append(random_schedule)
@@ -114,9 +120,9 @@ def genetic_algorithm(initial_schedule, generations, crossover_rate, mutation_ra
 
         # Elitism
         population.sort(key=lambda schedule: fitness_function(schedule), reverse=True)
-        new_population.extend(population[:EL_S])  # EL_S is fixed to 2
+        new_population.extend(population[:elitism_size])
 
-        while len(new_population) < POP:
+        while len(new_population) < population_size:
             parent1, parent2 = random.choices(population, k=2)
             if random.random() < crossover_rate:
                 child1, child2 = crossover(parent1, parent2)
@@ -136,25 +142,23 @@ def genetic_algorithm(initial_schedule, generations, crossover_rate, mutation_ra
 
 ##################################################### RESULTS ###################################################################################
 
-# Generate all possible schedules (brute force)
-all_possible_schedules = initialize_pop(all_programs, all_time_slots)
-
 # Brute force schedule
 initial_best_schedule = finding_best_schedule(all_possible_schedules)
 
-# Genetic algorithm schedule
-genetic_schedule = genetic_algorithm(
-    initial_best_schedule,
-    generations=GEN,
-    crossover_rate=CO_R,
-    mutation_rate=MUT_R,
-)
+# Remaining time slots
+rem_t_slots = len(all_time_slots) - len(initial_best_schedule)
 
-# Create the final schedule
+# Genetic algorithm schedule
+genetic_schedule = genetic_algorithm(initial_best_schedule, generations=GEN, population_size=POP, elitism_size=EL_S)
+
+# Combine initial and genetic schedules
+final_schedule = initial_best_schedule + genetic_schedule[:rem_t_slots]
+
+# Create a DataFrame for the final schedule
 final_schedule_data = {
-    "Time Slot": [f"{all_time_slots[time_slot]:02d}:00" for time_slot in range(len(genetic_schedule))],
-    "Program": genetic_schedule,
-    "Rating": [ratings[program][time_slot] for time_slot, program in enumerate(genetic_schedule)],
+    "Time Slot": [f"{all_time_slots[time_slot]:02d}:00" for time_slot in range(len(final_schedule))],
+    "Program": final_schedule,
+    "Rating": [ratings[program][time_slot] for time_slot, program in enumerate(final_schedule)],
 }
 
 df = pd.DataFrame(final_schedule_data)
@@ -164,4 +168,4 @@ st.write("### Final Optimal Schedule:")
 st.table(df)
 
 # Display the total ratings
-st.write("### Total Ratings:", fitness_function(genetic_schedule))
+st.write("### Total Ratings:", fitness_function(final_schedule))
