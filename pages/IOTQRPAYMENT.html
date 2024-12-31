@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR to Payment Form</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Submit Oil Purchase Details</h1>
+    <form id="paymentForm" enctype="multipart/form-data">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="accNo">Account Number:</label>
+        <input type="text" id="accNo" name="accNo" required>
+
+        <label for="bank">Bank:</label>
+        <input type="text" id="bank" name="bank" required>
+
+        <label for="image">Snap Image of Oil Litres (RM):</label>
+        <input type="file" id="image" name="image" accept="image/*" required>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            try {
+                const response = await fetch('/submit-data', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    alert('Data submitted successfully!');
+                } else {
+                    alert('Failed to submit data. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while submitting data.');
+            }
+        });
+    </script>
+</body>
+</html>
